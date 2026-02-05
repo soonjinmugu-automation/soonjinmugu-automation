@@ -152,7 +152,9 @@ def parse_datetime_for_sheet(datetime_str):
     patterns = [
         # 2026년 2월 7일 14:00
         r'(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일?\s*(\d{1,2}):(\d{2})',
-        # 2026-02-07 14:00
+        # 2026. 2. 7 14:00 (공백 포함 점 구분자)
+        r'(\d{2,4})\.\s*(\d{1,2})\.\s*(\d{1,2})\s*(\d{1,2}):(\d{2})',
+        # 2026-02-07 14:00 (하이픈 또는 점)
         r'(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s*(\d{1,2}):(\d{2})',
     ]
 
@@ -160,6 +162,11 @@ def parse_datetime_for_sheet(datetime_str):
         match = re.search(pattern, datetime_str)
         if match:
             year, month, day, hour, minute = match.groups()
+
+            # 2자리 연도를 4자리로 변환 (26 -> 2026)
+            if len(year) == 2:
+                year = f"20{year}"
+
             year_short = str(int(year))[-2:]  # 2026 -> 26
             date_str = f"{year_short}년 {int(month)}월 {int(day)}일"
 
