@@ -262,7 +262,7 @@ class SomssiCrawler:
                         # 모달 HTML 다시 가져오기 (발급 후 업데이트된 내용)
                         time.sleep(0.5)
 
-                        # 참여자 정보 추출 (이름 + 안심번호)
+                        # 참여자 정보 추출 (이름 + 안심번호 + 인원수)
                         participants = []
                         try:
                             modal_html = modal.get_attribute('innerHTML')
@@ -271,6 +271,8 @@ class SomssiCrawler:
                             names = re.findall(r'id="mebName"[^>]*value="([^"]*)"', modal_html)
                             # 전화번호 추출 (mebHp)
                             phones = re.findall(r'id="mebHp"[^>]*>([^<]*)<', modal_html)
+                            # 인원수 추출 (mebCnt 또는 inwr)
+                            people_counts = re.findall(r'id="(?:mebCnt|inwr)"[^>]*value="([^"]*)"', modal_html)
 
                             # 이름과 전화번호 매칭
                             for idx, name in enumerate(names):
@@ -280,15 +282,17 @@ class SomssiCrawler:
 
                                 # 전화번호가 있으면 사용, 없으면 빈 문자열
                                 phone = phones[idx].strip() if idx < len(phones) else ""
+                                # 인원수가 있으면 사용, 없으면 '1'
+                                people_count = people_counts[idx].strip() if idx < len(people_counts) and people_counts[idx].strip() else '1'
 
                                 # 전화번호가 050으로 시작하면 안심번호
                                 # 전화번호가 없거나 빈 문자열이면 "미할당"으로 표시
                                 if phone.startswith('050'):
-                                    participants.append({'name': name, 'phone': phone})
+                                    participants.append({'name': name, 'phone': phone, 'people': people_count})
                                 elif phone == "" or not phone:
-                                    participants.append({'name': name, 'phone': '미할당'})
+                                    participants.append({'name': name, 'phone': '미할당', 'people': people_count})
                                 else:
-                                    participants.append({'name': name, 'phone': phone})
+                                    participants.append({'name': name, 'phone': phone, 'people': people_count})
 
                         except:
                             pass
@@ -314,18 +318,20 @@ class SomssiCrawler:
                         # 예약 정보 저장
                         for p in participants:
                             datetime_str = f"{schedule_date} {class_time}" if schedule_date else class_time
+                            people_count = p.get('people', '1')  # 인원수 (기본값 1)
                             reservation = {
                                 'platform': '솜씨당',
                                 'name': p['name'],
                                 'phone': p['phone'],
-                                'people': '1',
+                                'people': people_count,
                                 'datetime': datetime_str,
                                 'location': location,
                                 'class_title': class_title,
                                 'status': '예약 확정'
                             }
                             reservations.append(reservation)
-                            print(f"✅ 솜씨당 예약: {p['name']} | {p['phone']} | {datetime_str} | {location}")
+                            people_display = f"({people_count}명)" if people_count != '1' else ""
+                            print(f"✅ 솜씨당 예약: {p['name']}{people_display} | {p['phone']} | {datetime_str} | {location}")
 
                     except Exception as modal_e:
                         print(f"⚠️ 모달 처리 실패: {modal_e}")
