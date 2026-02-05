@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.soonjinmugu.automation</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/elly/자동화/automation/run_automation.sh</string>
+    </array>
+
+    <!-- 매일 오전 9시에 실행 -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- 로그 파일 -->
+    <key>StandardOutPath</key>
+    <string>/Users/elly/자동화/logs/automation.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/elly/자동화/logs/automation_error.log</string>
+
+    <!-- 환경 변수 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>LANG</key>
+        <string>ko_KR.UTF-8</string>
+    </dict>
+
+    <!-- 실행 디렉토리 -->
+    <key>WorkingDirectory</key>
+    <string>/Users/elly/자동화/automation</string>
+
+    <!-- 시스템 시작 시 로드 -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- 재시도 설정 -->
+    <key>KeepAlive</key>
+    <false/>
+</dict>
+</plist>

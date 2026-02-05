@@ -1,0 +1,30 @@
+# Google API 인증 파일 (절대 커밋하지 말 것!)
+credentials.json
+token.pickle
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# 결과 파일
+~/자동화/결과/
+*.csv
+
+# 로그
+logs/
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
