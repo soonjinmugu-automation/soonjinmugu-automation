@@ -220,6 +220,50 @@ def add_to_cache(date_str, name, phone):
         _existing_reservations_cache.add(key)
 
 
+def find_reservation_by_name_date(date_str, name, sheet_name="예약목록"):
+    """이름+날짜로 기존 예약 찾기 (안심번호 변경 감지용)"""
+    try:
+        data = get_sheet_data(sheet_name)
+        for i, row in enumerate(data[1:], start=2):  # 헤더 제외, 행 번호는 2부터
+            if len(row) >= 5:
+                row_date = row[0]  # A열: 일자
+                row_name = row[3]  # D열: 이름
+                row_phone = row[4]  # E열: 전화번호
+
+                if row_date == date_str and row_name == name:
+                    return {
+                        'row_index': i,
+                        'phone': row_phone,
+                        'date': row_date,
+                        'name': row_name
+                    }
+        return None
+    except Exception as e:
+        print(f"❌ 예약 검색 실패: {e}")
+        return None
+
+
+def update_reservation_phone(row_index, new_phone, sheet_name="예약목록"):
+    """기존 예약의 전화번호만 업데이트 (안심번호 변경 시)"""
+    try:
+        service = get_sheets_service()
+        range_name = f"{sheet_name}!E{row_index}"  # E열: 전화번호
+
+        body = {'values': [[new_phone]]}
+
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=range_name,
+            valueInputOption='USER_ENTERED',
+            body=body
+        ).execute()
+
+        return True
+    except Exception as e:
+        print(f"❌ 전화번호 업데이트 실패: {e}")
+        return False
+
+
 def add_reservation_to_sheet(reservation, sheet_name="예약목록"):
     """예약 데이터를 시트에 추가 (중복 체크 포함)"""
 
@@ -227,35 +271,46 @@ def add_reservation_to_sheet(reservation, sheet_name="예약목록"):
     date_str, time_str = parse_datetime_for_sheet(reservation.get('datetime', ''))
     name = reservation.get('name', '')
     phone = reservation.get('phone', '')
+    people = int(reservation.get('people', 1))
 
-    # 중복 체크
-    if is_duplicate_reservation(date_str, name, phone, sheet_name):
-        print(f"⏭️ 시트 중복 스킵: {name} - {date_str}")
-        return False
+    # 이름+날짜로 기존 예약 찾기 (안심번호 업데이트용)
+    existing_row = find_reservation_by_name_date(date_str, name, sheet_name)
+
+    if existing_row:
+        # 기존 예약이 있으면 전화번호만 업데이트
+        if existing_row['phone'] != phone:
+            update_reservation_phone(existing_row['row_index'], phone, sheet_name)
+            print(f"🔄 안심번호 업데이트: {name} - {date_str} ({existing_row['phone']} → {phone})")
+            return True
+        else:
+            # 완전히 같은 예약
+            print(f"⏭️ 시트 중복 스킵: {name} - {date_str}")
+            return False
 
     # 매출 계산
     price, fee, rental, net = calculate_revenue(
         reservation['platform'],
         reservation.get('location', ''),
-        int(reservation.get('people', 1))
+        people
     )
 
     row = [
-        date_str,  # 일자 (26년 2월 7일)
-        time_str,  # 수업시간 (14시-17시)
-        reservation.get('platform', ''),  # 플랫폼
-        name,  # 이름
-        phone,  # 전화번호
-        reservation.get('location', ''),  # 장소
-        reservation.get('class_title', ''),  # 수업명
-        price,  # 가격
-        fee,  # 수수료
-        rental,  # 장소대여료
-        net,  # 실수령액
-        reservation.get('status', ''),  # 상태
-        '',  # 7일전 문자
-        '',  # 당일 문자
-        '',  # 종료 문자
+        date_str,  # A: 일자 (26년 2월 7일)
+        time_str,  # B: 수업시간 (14시-17시)
+        reservation.get('platform', ''),  # C: 플랫폼
+        name,  # D: 이름
+        phone,  # E: 전화번호
+        reservation.get('location', ''),  # F: 장소
+        reservation.get('class_title', ''),  # G: 수업명
+        people,  # H: 인원수 ← 추가!
+        price,  # I: 가격
+        fee,  # J: 수수료
+        rental,  # K: 장소대여료
+        net,  # L: 실수령액
+        reservation.get('status', ''),  # M: 상태
+        '',  # N: 7일전 문자
+        '',  # O: 당일 문자
+        '',  # P: 종료 문자
     ]
 
     result = append_to_sheet(sheet_name, [row])
